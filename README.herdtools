@@ -1,0 +1,51 @@
+Herdtools 
+---------
+
+Simplified user-level management of a "herd" of machines
+
+---------
+
+The Herdtools are a set of Perl scripts which perform various "job parallel"
+functions so that you can control a "herd", or cluster, of machines from
+one connection.  In most cases, the Herdtools use rsh or ssh to actually
+do the work for you; in other cases, they may connect to Rob Brown's
+procstatd to collect some information; in still other cases, they may
+simply read a file on disk and report information back to you.
+
+In any event, the idea is to provide a consistent interface for selecting
+relevant groups of machines:  all machines in the "cow" cluster, or all
+machines that have F90 compilers, or all machines except those with the
+"mem512" tag.
+
+
+cl_hosts	prints the list of hosts that will be used
+cl_exec		run a command, in parallel, on multiple machines
+cl_sig		sends a signal to all named programs on multiple machines
+cl_kill		sends the KILL signal to all names programs on mult machines
+cl_cp		copies a file from a global file-space to a local file-space
+cl_ipcs		shows Unix IPC items on remote machines
+cl_ipcrm	cleans up Unix IPC items on remote machines
+cl_sudo		run a command, in parallel, on multiple machines as super-user
+
+cl_ps		contacts the remote procstatd to perform a ps
+cl_proc		contacts the remote procstatd and dumps all info
+cl_quik		contacts the remote procstatd and gets some quick info
+
+cl_stat		prints the current cluster status (from webwatchd)
+cl_motd		prints the motd for the cluster
+
+webwatchd	periodically connects to all procstatd's and dumps info
+		to a web page
+kick_web	can be used to give webwatchd a "kick" and re-connect to
+		the machines
+
+cl_bcast	EXPERIMENTAL: copies a file to remote machines using a 
+		binary tree broadcast
+dirsync		EXPERIMENTAL: intelligently copies the files in a directory 
+		to remote machines; only copies changed files
+cl_multirun	EXPERIMENTAL: intelligently runs a command on multiple input
+		data sets on multiple machines
+
+
+30 January 2002, John Pormann, Duke University, jpormann@ee.duke.edu
+

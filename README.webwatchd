@@ -1,0 +1,139 @@
+Webwatch:  web-based interface to the procstatd output
+------------------------------------------------------
+
+John Pormann, jpormann@ee.duke.edu
+
+procstatd comes from Rob Brown, rgb@phy.duke.edu
+and much of the webwatchd code was lifted from his watchman perl
+script as well
+
+------------------------------------------------------
+
+I. Basics:
+  A. webwatch hits a list of machines and attempts to connect to the
+     procstatd
+  B. if it can't find a procstatd running, it lists the machine as
+     "No-D" meaning "No Daemon Found"
+  C. if it can connect, it will initialize a new procstatd connection
+     (returning "Init" to the web page)
+  D. then it will continually hit the procstatd's at a set rate (usually
+     every 10 minutes or so, this is resettable on-the-fly)
+  E. you just point your web browser at the page and it will automatically
+     re-load the page at the same rate
+
+II. Configuration
+  A. the file "herd.config" holds all the info
+    1. weblocation = /where/ever/you/want
+      a. this is where the web page will be copied to - so this should
+	 probably be something like your ~/public_html directory
+      b. the web page is always called "cluster.html"
+      c. also writes the raw procstatd data to a file "cluster.data"
+    2. exelocation = /where/to/find/webwatch/scripts
+      a. where to find the scripts
+      b. really only used by "helper" programs
+    3. pingcmd = /bin/ping
+      a. for Linux, /bin/ping seems to be the place
+      b. on others, maybe it's /usr/bin/ping
+      c. basically, I call "$pingcmd -q -c 1 $host" for each host
+         so the ping command should accept those arguments ("-q" is quiet,
+         "-c 1" means only send 1 copy or 1 packet)
+    4. hostlist = node1,node2,node3
+      a. you can have several hostlist lines
+      b. all lines are concatenated into one big list
+    5. outputlist = load1:1,load5:1,load15:1,mem_used:1,shm_tot:1
+      a. this is a list of output items to include on the page
+      b. the first part is the pattern to search for in the procstatd
+         output
+      c. the number after the colon is the field to print (usually this
+         will be 1, meaning the first value after "load1"; but some
+         items may have more than 1 field associated?)
+      d. "cat cluster.data" to see the raw data and field names
+    6. heartbeat = 10m
+      a. this is the amount of time that we sleep in between updates
+      b. 10m = 10 minutes, 600s or 600 = 600 seconds, 1h = 1 hour
+      c. this is also written into the web page to trigger the automatic
+         re-load of the page (converted to seconds)
+    7. port = 7885
+      a. pick whatever port procstatd was configured for
+    8. webtitle = string
+      a. title for the web page
+    9. webimage1 = file.jpg
+    10. webimage2 = file.jpg
+      a. image 1 is set to the left of the title
+      b. image 2 is set to the right
+      c. these can be any type of image
+    11. numlinks = #rows x #cols
+      a. this is to display a table of links under the main title
+      b. if you have too few weblinks (see below), strange things
+         may happen
+    12. weblink1 = text, url
+        weblink2 = text, url
+      a. list as many as you'd like
+      b. these are put into a table of links near the top of the page
+      c. since I scan for the comma (to separate the text and url), you
+         probably don't want to use commas in your text!!
+    13. meterimage = base_filename
+    14. meterround = 10
+      a. for the CPU and Memory Usage meters, we copy files of the form
+         "$meterimage_$percent.jpg"
+      b. the $percent is rounded to $meterround (hence 10 makes sense)
+      c. the files are assumed to be "*.jpg" files
+      d. you can create your own meter files, just name them properly
+      e. you should also create an image "$meterimage_err.jpg" to
+         display when a machine is down
+      f. the files in the "meter" subdir are a place to start, but you
+         can customize them - make them bigger, change colors, etc.
+  B. you can use another config file with the "-f filename" option to
+     webwatchd
+  C. you can use a different port number with the "-p port" option
+  D. you can use a different update frequency with the "-u #seconds" option
+
+III. webwatchd program
+  A. webwatchd is Perl script which does all the work
+    1. it is currently set up as "#!/usr/bin/perl"
+    2. you may need to edit the file and point it to the proper location
+       of your Perl interpretter
+  B. since it's Perl, you can edit the file easily
+    1. DEFINITELY go in and change the defaults - weblocation, exelocation,
+       configfile, etc.
+    2. you could also change the look of the web page by editing the
+       print statements that output the HTML
+  C. just run the program and put it in the background
+    1. on my system, it seems to persist even after I log out
+    2. if not, try "nohup webwatchd &"
+  D. you can force a new update immediately by sending a SIGUSR1 to the
+     webwatchd process (ie. "kill -USR1 pid")
+  E. you can also reset the webwatchd configuration on-the-fly by sending
+     SIGUSR2 - the config file will be re-read, all connections will be
+     terminated and restartted
+
+IV. Helper programs
+  A. start_procstatd
+    1. THIS IS A KLUDGE!!
+    2. reads the config file for the hostlist, then starts up procstatd's
+       on that set of hosts
+    3. it does an rsh to the remote machine and runs "start_helper"
+    4. it then sleeps for a while
+    5. finally, it kills off (locally) the rsh process
+    6. the remote machine will still have a dangling rsh, but this doesn't
+       take up much resources
+  B. kick_web
+    1. automates the process of signalling the webwatchd process
+    2. "kick_web -1" to update the page prematurely
+    3. "kick_web -2" to re-read the config file and update the page
+    4. all this does is read the config file, rsh to the correct machine,
+       ps to find "webwatchd", then "kill -<SIG> PID"
+  C. These are all Perl scripts, so edit them as you need
+
+
+----------------------------------------------------------------------
+
+To Do list:
+
+1. Add a logging feature to see if anything goes wrong
+
+2. Add support for graceful shutdown, right now, we trap SIGINT and
+   close sockets, we could also send the "quit" message to each
+   procstatd
+
+
